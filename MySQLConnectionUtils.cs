@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.TeamFoundation.Common;
 using MySql.Data.MySqlClient;
 using static RYCBEditorX.GlobalConfig;
@@ -13,8 +9,7 @@ namespace RYCBEditorX.MySQL;
 [System.Security.SecurityCritical]
 public class MySQLConnectionUtils
 {
-    private string _connectionString;
-    private MySqlCommand _command;
+    private readonly MySqlCommand _command;
 
     public MySqlConnection MySqlConnection
     {
@@ -23,19 +18,19 @@ public class MySQLConnectionUtils
 
     public MySQLConnectionUtils()
     {
-        _connectionString = "B4w3CnmOhXzkLpgHzq5+oYo6rKKEnt/znwxs7kYaCyI9B3YXyq+gxU52T8fhgytJ1iDcH8Z2cMRHI9eEcMWrgG039Si7Xkvjgn1uBxZ5kVvDvplLUUV7TOHwPc+H+zaPfx1C94iJEeX8rRjlc2G4p8+bnL1TN8JMJvVz0V2GcHo=";
-        _connectionString = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
+        var connectionString = "B4w3CnmOhXzkLpgHzq5+oYo6rKKEnt/znwxs7kYaCyI9B3YXyq+gxU52T8fhgytJ1iDcH8Z2cMRHI9eEcMWrgG039Si7Xkvjgn1uBxZ5kVvDvplLUUV7TOHwPc+H+zaPfx1C94iJEeX8rRjlc2G4p8+bnL1TN8JMJvVz0V2GcHo=";
+        connectionString = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
         {
-            Arguments = "-d " + _connectionString,
-            FileName = StartupPath + "\\Tools\\crypto-helper.exe",
+            Arguments = "-d " + connectionString,
+            FileName = StartupPath + @"\Tools\crypto-helper.exe",
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
             WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
-        }).StandardOutput.ReadToEnd();
-        MySqlConnection = new MySqlConnection(_connectionString);
+        })?.StandardOutput.ReadToEnd();
+        MySqlConnection = new MySqlConnection(connectionString);
         _command = new MySqlCommand
         {
             Connection = MySqlConnection
@@ -47,12 +42,12 @@ public class MySQLConnectionUtils
         try
         {
             MySqlConnection.Open();
-            CurrentLogger.Log("MySQL数据库连接成功。", module: Utils.EnumLogModule.CUSTOM, customModuleName: "MySQL:初始化");
+            CurrentLogger.Log("MySQL数据库连接成功。", module: Utils.EnumLogModule.SQL);
         }
         catch (Exception ex)
         {
-            CurrentLogger.Log("MySQL数据库连接失败。", Utils.EnumLogType.WARN, module: Utils.EnumLogModule.CUSTOM, customModuleName: "MySQL:初始化");
-            CurrentLogger.Error(ex, type: Utils.EnumLogType.WARN, module: Utils.EnumLogModule.CUSTOM, customModuleName: "MySQL:初始化");
+            CurrentLogger.Log("MySQL数据库连接失败。", Utils.EnumLogType.WARN, module: Utils.EnumLogModule.SQL);
+            CurrentLogger.Error(ex, type: Utils.EnumLogType.WARN, module: Utils.EnumLogModule.SQL);
         }
     }
 
@@ -67,71 +62,59 @@ public class MySQLConnectionUtils
     /// <param name="having">(可选) 分组后条件</param>
     /// <param name="limit">(可选) (MySQL方言) 分页参数，用逗号分隔</param>
     /// <returns></returns>
-    public Dictionary<string,object> Select(string table_name, string field_name = "*",
+    public List<Dictionary<string, object>> Select(string table_name, string field_name = "*",
         string condition = "", SQL_ORDER_BY_KEYWORDS order_by = SQL_ORDER_BY_KEYWORDS.ASC,
         string group_by = "", string having = "", string limit = "")
     {
+        List<Dictionary<string, object>> results = [];
+        var SQL = $"SELECT {field_name} FROM {table_name}";
+        if (field_name != "*")
+        {
+            SQL += $" ORDER BY {field_name} {order_by.OrderBy_Value()}";
+        }
+        if (!condition.IsNullOrEmpty())
+        {
+            SQL += $" WHERE {condition}";
+        }
+        if (!group_by.IsNullOrEmpty())
+        {
+            SQL += $" GROUP BY {group_by}";
+        }
+        if (!having.IsNullOrEmpty())
+        {
+            SQL += $" HAVING {having}";
+        }
+        if (!limit.IsNullOrEmpty())
+        {
+            SQL += $" LIMIT {limit}";
+        }
+        _command.CommandText = SQL;
+        var reader = _command.ExecuteReader(); 
         try
         {
-            var SQL = $"SELECT {field_name} FROM {table_name}";
-            if (field_name != "*")
-            {
-                SQL += $" ORDER BY {field_name} {order_by.OrderBy_Value()}";
-            }
-            if (!condition.IsNullOrEmpty())
-            {
-                SQL += $" WHERE {condition}";
-            }
-            if (!group_by.IsNullOrEmpty())
-            {
-                SQL += $" GROUP BY {group_by}";
-            }
-            if (!having.IsNullOrEmpty())
-            {
-                SQL += $" HAVING {having}";
-            }
-            if (!limit.IsNullOrEmpty())
-            {
-                SQL += $" LIMIT {limit}";
-            }
-            _command.CommandText = SQL;
-            var reader = _command.ExecuteReader();
-            if (reader.Read())
-            {
-                try
-                {
-                    Dictionary<string, object> row = [];
-                    for (var i = 0; i < reader.FieldCount; i++)
-                    {
-                        var columnName = reader.GetName(i);
-                        var value = reader.GetValue(i);
-                        row[columnName] = value;
-                    }
-                    return row;
 
-                }
-                catch (Exception ex)
-                {
-                    CurrentLogger.Error(ex);
-                    return [];
-                }
-                finally
-                {
-                    reader.Close();
-                    CurrentLogger.Log("当前SQL命令: " + SQL);
-                }
-            }
-            else
+            while (reader.Read())
             {
-                return [];
+                Dictionary<string, object> row = [];
+                for (var i = 0; i < reader.FieldCount; i++)
+                {
+                    var columnName = reader.GetName(i);
+                    var value = reader.GetValue(i);
+                    row[columnName] = value;
+                }
+                results.Add(row);
             }
         }
         catch (Exception ex)
         {
-            CurrentLogger.Error(ex);
-            return [];
+            CurrentLogger.Error(ex, module:Utils.EnumLogModule.SQL);
         }
-        return [];
+        finally
+        {
+            reader.Close();
+            CurrentLogger.Log("当前SQL命令: " + SQL, module:Utils.EnumLogModule.SQL);
+        }
+        return results;
     }
 
     /// <summary>
@@ -282,12 +265,12 @@ public class MySQLConnectionUtils
         }
         catch (Exception ex)
         {
-            CurrentLogger.Error(ex);
+            CurrentLogger.Error(ex, module: Utils.EnumLogModule.SQL);
             return false;
         }
         finally
         {
-            CurrentLogger.Log("当前SQL命令: " + CommandText);
+            CurrentLogger.Log("当前SQL命令: " + CommandText, module: Utils.EnumLogModule.SQL);
         }
     }
 }
@@ -306,7 +289,13 @@ public enum SQL_ORDER_BY_KEYWORDS
 
 public enum SQL_CREATION_TYPE
 {
+    /// <summary>
+    /// 数据库
+    /// </summary>
     DATABASE,
+    /// <summary>
+    /// 表
+    /// </summary>
     TABLE,
     SCHEMA = TABLE
 }

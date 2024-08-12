@@ -1,6 +1,6 @@
 ﻿using Prism.Ioc;
 using Prism.Modularity;
-using Prism.Regions;
+using System;
 
 namespace RYCBEditorX.MySQL;
 public class MySQLModule : IModule
@@ -9,8 +9,21 @@ public class MySQLModule : IModule
     {
         MySQLConnectionUtils mySQLConnection = new();
         mySQLConnection.Init();
+        if (mySQLConnection.MySqlConnection is null)
+        {
+            GlobalConfig.CurrentLogger.Error(new NullReferenceException("`MySqlConnection为null。已停止连接。"), "", Utils.EnumLogType.WARN);
+            return;
+        }
         var _ = mySQLConnection.Select("private_info");
-        GlobalConfig.CurrentLogger.Log(_["username"], module: Utils.EnumLogModule.CUSTOM, customModuleName: "MySQL:Test");
+        GlobalConfig.CurrentLogger.Log(_[0]["username"], module: Utils.EnumLogModule.SQL);
+        _ = mySQLConnection.Select("update_info");
+        foreach (var item in _)
+        {
+            foreach (var item2 in item)
+            {
+                GlobalConfig.CurrentLogger.Log($"{item2.Key}, {item2.Value}", module: Utils.EnumLogModule.SQL);
+            }
+        }
         //if (mySQLConnection.Create(SQL_CREATION_TYPE.TABLE,"user_data" ,["cookies"], ["varchar(50)"], []))
         //{
         //    GlobalConfig.CurrentLogger.Log("新建表user_data成功。", module: Utils.EnumLogModule.CUSTOM, customModuleName: "MySQL:Test");
@@ -43,7 +56,7 @@ public class MySQLModule : IModule
         //{
         //    GlobalConfig.CurrentLogger.Log("向表user_data删除NULL数据失败。", module: Utils.EnumLogModule.CUSTOM, customModuleName: "MySQL:Test");
         //}
-        GlobalConfig.CurrentLogger.Log("MySQL模块初始化完成.", module: Utils.EnumLogModule.CUSTOM, customModuleName: "MySQL:初始化");
+        GlobalConfig.CurrentLogger.Log("MySQL模块初始化完成.", module: Utils.EnumLogModule.SQL);
     }
 
     public void RegisterTypes(IContainerRegistry containerRegistry)
