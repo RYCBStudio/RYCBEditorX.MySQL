@@ -16,6 +16,11 @@ public class MySQLConnectionUtils
         get; set;
     }
 
+    public bool ConnectionOpened
+    {
+        get; set;
+    }
+
     public MySQLConnectionUtils()
     {
         var connectionString = "B4w3CnmOhXzkLpgHzq5+oYo6rKKEnt/znwxs7kYaCyI9B3YXyq+gxU52T8fhgytJ1iDcH8Z2cMRHI9eEcMWrgG039Si7Xkvjgn1uBxZ5kVvDvplLUUV7TOHwPc+H+zaPfx1C94iJEeX8rRjlc2G4p8+bnL1TN8JMJvVz0V2GcHo=";
@@ -39,15 +44,18 @@ public class MySQLConnectionUtils
 
     public void Init()
     {
+        CurrentLogger.Log("正在尝试连接MySQL数据库...", module:Utils.EnumLogModule.SQL);
         try
         {
             MySqlConnection.Open();
             CurrentLogger.Log("MySQL数据库连接成功。", module: Utils.EnumLogModule.SQL);
+            ConnectionOpened = true;
         }
         catch (Exception ex)
         {
             CurrentLogger.Log("MySQL数据库连接失败。", Utils.EnumLogType.WARN, module: Utils.EnumLogModule.SQL);
             CurrentLogger.Error(ex, type: Utils.EnumLogType.WARN, module: Utils.EnumLogModule.SQL);
+            ConnectionOpened = false;
         }
     }
 
@@ -66,6 +74,10 @@ public class MySQLConnectionUtils
         string condition = "", SQL_ORDER_BY_KEYWORDS order_by = SQL_ORDER_BY_KEYWORDS.ASC,
         string group_by = "", string having = "", string limit = "")
     {
+        if (!ConnectionOpened)
+        {
+            return [];
+        }
         List<Dictionary<string, object>> results = [];
         var SQL = $"SELECT {field_name} FROM {table_name}";
         if (field_name != "*")
@@ -89,7 +101,7 @@ public class MySQLConnectionUtils
             SQL += $" LIMIT {limit}";
         }
         _command.CommandText = SQL;
-        var reader = _command.ExecuteReader(); 
+        var reader = _command.ExecuteReader();
         try
         {
 
@@ -107,12 +119,12 @@ public class MySQLConnectionUtils
         }
         catch (Exception ex)
         {
-            CurrentLogger.Error(ex, module:Utils.EnumLogModule.SQL);
+            CurrentLogger.Error(ex, module: Utils.EnumLogModule.SQL);
         }
         finally
         {
             reader.Close();
-            CurrentLogger.Log("当前SQL命令: " + SQL, module:Utils.EnumLogModule.SQL);
+            CurrentLogger.Log("当前SQL命令: " + SQL, module: Utils.EnumLogModule.SQL);
         }
         return results;
     }
