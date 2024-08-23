@@ -2,20 +2,23 @@
 using System.Collections.Generic;
 using Microsoft.TeamFoundation.Common;
 using MySql.Data.MySqlClient;
+using RYCBEditorX.Utils;
 using static RYCBEditorX.GlobalConfig;
 
 namespace RYCBEditorX.MySQL;
 
 [System.Security.SecurityCritical]
-public class MySQLConnectionUtils
+public class MySQLConnectionUtils : ISQLConnectionUtils
 {
     private readonly MySqlCommand _command;
 
+    /// <inheritdoc/>
     public MySqlConnection MySqlConnection
     {
         get; set;
     }
 
+    /// <inheritdoc/>
     public bool ConnectionOpened
     {
         get; set;
@@ -23,7 +26,8 @@ public class MySQLConnectionUtils
 
     public MySQLConnectionUtils()
     {
-        var connectionString = "B4w3CnmOhXzkLpgHzq5+oYo6rKKEnt/znwxs7kYaCyI9B3YXyq+gxU52T8fhgytJ1iDcH8Z2cMRHI9eEcMWrgG039Si7Xkvjgn1uBxZ5kVvDvplLUUV7TOHwPc+H+zaPfx1C94iJEeX8rRjlc2G4p8+bnL1TN8JMJvVz0V2GcHo=";
+        var connectionString =
+            "B4w3CnmOhXzkLpgHzq5+oYo6rKKEnt/znwxs7kYaCyI9B3YXyq+gxU52T8fhgytJ1iDcH8Z2cMRHI9eEcMWrgG039Si7Xkvjgn1uBxZ5kVvDvplLUUV7TOHwPc+H+zaPfx1C94iJEeX8rRjlc2G4p8+bnL1TN8JMJvVz0V2GcHo=";
         connectionString = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
         {
             Arguments = "-d " + connectionString,
@@ -42,34 +46,25 @@ public class MySQLConnectionUtils
         };
     }
 
+    /// <inheritdoc/>
     public void Init()
     {
-        CurrentLogger.Log("正在尝试连接MySQL数据库...", module:Utils.EnumLogModule.SQL);
+        CurrentLogger.Log("正在尝试连接MySQL数据库...", module: EnumLogModule.SQL);
         try
         {
             MySqlConnection.Open();
-            CurrentLogger.Log("MySQL数据库连接成功。", module: Utils.EnumLogModule.SQL);
+            CurrentLogger.Log("MySQL数据库连接成功。", module: EnumLogModule.SQL);
             ConnectionOpened = true;
         }
         catch (Exception ex)
         {
-            CurrentLogger.Log("MySQL数据库连接失败。", Utils.EnumLogType.WARN, module: Utils.EnumLogModule.SQL);
-            CurrentLogger.Error(ex, type: Utils.EnumLogType.WARN, module: Utils.EnumLogModule.SQL);
+            CurrentLogger.Log("MySQL数据库连接失败。", EnumLogType.WARN, module: EnumLogModule.SQL);
+            CurrentLogger.Error(ex, type: EnumLogType.WARN, module: EnumLogModule.SQL);
             ConnectionOpened = false;
         }
     }
-
-    /// <summary>
-    /// 选择数据库中一张表。
-    /// </summary>
-    /// <param name="table_name">表名</param>
-    /// <param name="field_name">(可选) 字段名</param>
-    /// <param name="condition">(可选) 查询条件</param>
-    /// <param name="order_by">(可选) 排序规则</param>
-    /// <param name="group_by">(可选) 分组字段</param>
-    /// <param name="having">(可选) 分组后条件</param>
-    /// <param name="limit">(可选) (MySQL方言) 分页参数，用逗号分隔</param>
-    /// <returns></returns>
+    
+    /// <inheritdoc/>
     public List<Dictionary<string, object>> Select(string table_name, string field_name = "*",
         string condition = "", SQL_ORDER_BY_KEYWORDS order_by = SQL_ORDER_BY_KEYWORDS.ASC,
         string group_by = "", string having = "", string limit = "")
@@ -119,27 +114,17 @@ public class MySQLConnectionUtils
         }
         catch (Exception ex)
         {
-            CurrentLogger.Error(ex, module: Utils.EnumLogModule.SQL);
+            CurrentLogger.Error(ex, module: EnumLogModule.SQL);
         }
         finally
         {
             reader.Close();
-            CurrentLogger.Log("当前SQL命令: " + SQL, module: Utils.EnumLogModule.SQL);
+            CurrentLogger.Log("当前SQL命令: " + SQL, module: EnumLogModule.SQL);
         }
         return results;
     }
 
-    /// <summary>
-    /// 向数据库中添加一个类型。目前只支持添加表。
-    /// </summary>
-    /// <param name="type">添加的类型(目前只支持<see cref="SQL_CREATION_TYPE.TABLE"/>)</param>
-    /// <param name="table_name">添加的表的名称</param>
-    /// <param name="fields">添加的字段</param>
-    /// <param name="types">添加字段的类型</param>
-    /// <param name="comment">添加字段的描述(若无只需传一个空列表 <c>[]</c>)</param>
-    /// <param name="table_comment">(可选) 添加表的描述</param>
-    /// <returns>是否成功</returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <inheritdoc/>
     public bool Create(SQL_CREATION_TYPE type, string table_name,
         List<string> fields, List<string> types, List<string> comment, string table_comment = "")
     {
@@ -169,15 +154,7 @@ public class MySQLConnectionUtils
         return ExecuteNonQuery(SQL);
     }
 
-    /// <summary>
-    /// 向数据库中插入若干行数据。
-    /// </summary>
-    /// <param name="table_name">需插入数据的表名</param>
-    /// <param name="fields_list">需插入的字段列表，如果为空，则插入所有字段</param>
-    /// <param name="values_list">需插入的字段对应的值，可以是单行值或多行值的集合</param>
-    /// <returns>是否成功</returns>
-    /// <exception cref="ArgumentException">当字段列表和对应的值列表不匹配时抛出</exception>
-    /// <exception cref="InvalidOperationException">当操作数据库时出现异常时抛出</exception>
+    /// <inheritdoc/>
     public bool Insert(string table_name, string fields_list, string values_list)
     {
         if (string.IsNullOrWhiteSpace(table_name) || string.IsNullOrWhiteSpace(values_list))
@@ -217,15 +194,7 @@ public class MySQLConnectionUtils
         }
     }
 
-    /// <summary>
-    /// 更新指定表中的数据。
-    /// </summary>
-    /// <param name="table_name">指定的表名</param>
-    /// <param name="fields">需更新的字段</param>
-    /// <param name="vals">需更新的字段值</param>
-    /// <param name="condition">(可选)更新的条件</param>
-    /// <returns>是否成功</returns>
-    /// <exception cref="ArgumentException"></exception>
+    /// <inheritdoc/>
     public bool Update(string table_name, List<string> fields, List<string> vals, string condition = "")
     {
         if (fields.Count != vals.Count)
@@ -245,19 +214,13 @@ public class MySQLConnectionUtils
         return ExecuteNonQuery(SQL);
     }
 
-    /// <summary>
-    /// 从表中删除行。
-    /// </summary>
-    /// <param name="table_name">需删除数据的表</param>
-    /// <param name="condition">(可选) 删除条件</param>
-    /// <returns>是否成功</returns>
-    /// <exception cref="FormatException"></exception>
+    /// <inheritdoc/>
     public bool Delete(string table_name, string condition = "")
     {
         var SQL = $"DELETE FROM {table_name} ";
         if (condition.IsNullOrEmpty())
         {
-            CurrentLogger.Log("当前的SQL语句会影响所有行。", Utils.EnumLogType.WARN);
+            CurrentLogger.Log("当前的SQL语句会影响所有行。", EnumLogType.WARN);
             CurrentLogger.Error(new FormatException("当前的SQL语句会影响所有行。"));
         }
         else
@@ -267,6 +230,7 @@ public class MySQLConnectionUtils
         return ExecuteNonQuery(SQL);
     }
 
+    [SQLPrivileges.Execute]
     private bool ExecuteNonQuery(string CommandText)
     {
         _command.CommandText = CommandText;
@@ -277,12 +241,12 @@ public class MySQLConnectionUtils
         }
         catch (Exception ex)
         {
-            CurrentLogger.Error(ex, module: Utils.EnumLogModule.SQL);
+            CurrentLogger.Error(ex, module: EnumLogModule.SQL);
             return false;
         }
         finally
         {
-            CurrentLogger.Log("当前SQL命令: " + CommandText, module: Utils.EnumLogModule.SQL);
+            CurrentLogger.Log("当前SQL命令: " + CommandText, module: EnumLogModule.SQL);
         }
     }
 }
