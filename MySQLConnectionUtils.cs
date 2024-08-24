@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using Microsoft.TeamFoundation.Common;
 using MySql.Data.MySqlClient;
 using RYCBEditorX.Utils;
+using static IronPython.SQLite.PythonSQLite;
 using static RYCBEditorX.GlobalConfig;
 
 namespace RYCBEditorX.MySQL;
@@ -27,7 +29,7 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
     public MySQLConnectionUtils()
     {
         var connectionString =
-            "B4w3CnmOhXzkLpgHzq5+oYo6rKKEnt/znwxs7kYaCyI9B3YXyq+gxU52T8fhgytJ1iDcH8Z2cMRHI9eEcMWrgG039Si7Xkvjgn1uBxZ5kVvDvplLUUV7TOHwPc+H+zaPfx1C94iJEeX8rRjlc2G4p8+bnL1TN8JMJvVz0V2GcHo=";
+            "df4NtPRw/QiuAehTF7Buu5Cqky7tI0+mdoTqD58vNPE/Q7H7mYo8w6tKkE05xqDPXw7HSuXcVnKUIJnTLW1Ss/iHYsfG2a0qHgmTlC+LBsFi7EkUY1tsxLJTCEF1i726AyUZNqYZ5oNQMupasy5nxeKBDFiEsxxMiQNl4mPmVn0=";
         connectionString = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
         {
             Arguments = "-d " + connectionString,
@@ -56,6 +58,13 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
             CurrentLogger.Log("MySQL数据库连接成功。", module: EnumLogModule.SQL);
             ConnectionOpened = true;
         }
+        catch (MySqlException ex)
+        {
+            CurrentLogger.Error(ex, module: EnumLogModule.SQL);
+            CurrentLogger.Log("MySQL数据库断开连接。正在尝试重连...");
+            MySqlConnection.Close();
+            TryReconnent();
+        }
         catch (Exception ex)
         {
             CurrentLogger.Log("MySQL数据库连接失败。", EnumLogType.WARN, module: EnumLogModule.SQL);
@@ -63,10 +72,26 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
             ConnectionOpened = false;
         }
     }
+
+    private void TryReconnent()
+    {
+        try
+        {
+            MySqlConnection.Open();
+            CurrentLogger.Log("MySQL数据库重连成功。", module: EnumLogModule.SQL);
+            ConnectionOpened = true;
+        }
+        catch (Exception ex2)
+        {
+            CurrentLogger.Error(ex2, module: EnumLogModule.SQL);
+            CurrentLogger.Log("MySQL数据库重连失败。", module: EnumLogModule.SQL);
+            ConnectionOpened = false;
+        }
+    }
     
     /// <inheritdoc/>
     public List<Dictionary<string, object>> Select(string table_name, string field_name = "*",
-        string condition = "", SQL_ORDER_BY_KEYWORDS order_by = SQL_ORDER_BY_KEYWORDS.ASC,
+        string condition = "", SQL_ORDER_BY_KEYWORDS order_by = SQL_ORDER_BY_KEYWORDS.ASC, string order_by_field = "",
         string group_by = "", string having = "", string limit = "")
     {
         if (!ConnectionOpened)
@@ -78,6 +103,10 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
         if (field_name != "*")
         {
             SQL += $" ORDER BY {field_name} {order_by.OrderBy_Value()}";
+        }
+        else if (!order_by_field.IsNullOrEmpty())
+        {
+            SQL += $" ORDER BY {order_by_field} {order_by.OrderBy_Value()}";
         }
         if (!condition.IsNullOrEmpty())
         {
@@ -96,10 +125,10 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
             SQL += $" LIMIT {limit}";
         }
         _command.CommandText = SQL;
-        var reader = _command.ExecuteReader();
+        MySqlDataReader reader = null;
         try
         {
-
+            reader = _command.ExecuteReader();
             while (reader.Read())
             {
                 Dictionary<string, object> row = [];
@@ -112,13 +141,20 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
                 results.Add(row);
             }
         }
+        catch (MySqlException ex)
+        {
+            CurrentLogger.Error(ex, module: EnumLogModule.SQL);
+            CurrentLogger.Log("MySQL数据库断开连接。正在尝试重连...");
+            MySqlConnection.Close();
+            TryReconnent();
+        }
         catch (Exception ex)
         {
             CurrentLogger.Error(ex, module: EnumLogModule.SQL);
         }
         finally
         {
-            reader.Close();
+            reader?.Close();
             CurrentLogger.Log("当前SQL命令: " + SQL, module: EnumLogModule.SQL);
         }
         return results;
@@ -181,6 +217,14 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
             var rowsAffected = _command.ExecuteNonQuery();
             return rowsAffected > 0;
         }
+        catch (MySqlException ex)
+        {
+            CurrentLogger.Error(ex, module: EnumLogModule.SQL);
+            CurrentLogger.Log("MySQL数据库断开连接。正在尝试重连...");
+            MySqlConnection.Close();
+            TryReconnent();
+            return false;
+        }
         catch (Exception ex)
         {
             // 记录异常信息
@@ -238,6 +282,15 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
         {
             var affected_rows = _command.ExecuteNonQuery();
             return affected_rows > 0;
+        }
+
+        catch (MySqlException ex)
+        {
+            CurrentLogger.Error(ex, module: EnumLogModule.SQL);
+            CurrentLogger.Log("MySQL数据库断开连接。正在尝试重连...");
+            MySqlConnection.Close();
+            TryReconnent();
+            return false;
         }
         catch (Exception ex)
         {

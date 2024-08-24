@@ -37,6 +37,7 @@ namespace RYCBEditorX.MySQL
         /// <param name="field_name">(可选) 字段名</param>
         /// <param name="condition">(可选) 查询条件</param>
         /// <param name="order_by">(可选) 排序规则</param>
+        /// <param name="order_by_field">(可选) 排序字段</param>
         /// <param name="group_by">(可选) 分组字段</param>
         /// <param name="having">(可选) 分组后条件</param>
         /// <param name="limit">(可选) 分页参数，用逗号分隔</param>
@@ -44,7 +45,7 @@ namespace RYCBEditorX.MySQL
         [SQLPrivileges.Select]
         List<Dictionary<string, object>> Select(string table_name, string field_name = "*",
         string condition = "", SQL_ORDER_BY_KEYWORDS order_by = SQL_ORDER_BY_KEYWORDS.ASC,
-        string group_by = "", string having = "", string limit = "");
+        string order_by_field = "", string group_by = "", string having = "", string limit = "");
 
         /// <summary>
         /// 向数据库中添加一个类型。目前只支持添加表。

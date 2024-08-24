@@ -21,13 +21,31 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
                 Uid = row["uid"].ToString(),
                 CommentText = row["commentText"].ToString(),
                 Time = row["time"] != DBNull.Value ? Convert.ToDateTime(row["time"]).ToString("yyyy-MM-dd HH:mm:ss") : "Unknown",
-                Likes = row["likes"] != DBNull.Value ? Convert.ToInt32(row["likes"]) : 0
+                Likes = row["likes"] != DBNull.Value ? Convert.ToInt32(row["likes"]) : 0,
+                Target = row["target"].ToString()
             };
 
             comments.Add(comment);
         }
 
         return comments;
+    }
+
+    public bool DeleteComment(string uid)
+    {
+        var condition = $"uid='{uid}'";
+
+        var success = sqlUtils.Delete("comments", condition);
+
+        if (success)
+        {
+            GlobalConfig.CurrentLogger.Log($"成功删除UID为'{uid}'的评论。", module: EnumLogModule.SQL);
+        }
+        else
+        {
+            GlobalConfig.CurrentLogger.Log($"删除UID为'{uid}'的评论失败。", module: EnumLogModule.SQL);
+        }
+        return success;
     }
 
     public bool UpdateLikes(string uid, int newLikes)
@@ -55,10 +73,10 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
         var tableName = "comments";
 
         // 定义字段列表
-        var fieldsList = "usr, uid, commentText, time, likes";
+        var fieldsList = "usr, uid, commentText, time, likes, target";
 
         // 定义值列表，并对特殊字符进行转义（例如引号）
-        var valuesList = $"'{newComment.User}', '{newComment.Uid}', '{newComment.CommentText}', '{newComment.Time}', {newComment.Likes}";
+        var valuesList = $"'{newComment.User}', '{newComment.Uid}', '{newComment.CommentText}', '{newComment.Time}', {newComment.Likes}, {newComment.Target}";
 
         // 执行插入操作
         var success = sqlUtils.Insert(tableName, fieldsList, valuesList);
@@ -74,7 +92,7 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
         return success;
     }
 
-    public bool AddComment(string markdownedCommentText, string user)
+    public bool AddComment(string markdownedCommentText, string user, string target = "")
     {
         var newComment = new Comment()
         {
@@ -82,28 +100,29 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
             User = user,
             Uid= DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss").ComputeMd5(),
             Time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-            Likes = 0
+            Likes = 0,
+            Target = target
         };
 
         // 定义表名
         var tableName = "comments";
 
         // 定义字段列表
-        var fieldsList = "usr, uid, commentText, time, likes";
+        var fieldsList = "usr, uid, commentText, time, likes, target";
 
         // 定义值列表，并对特殊字符进行转义（例如引号）
-        var valuesList = $"'{newComment.User}', '{newComment.Uid}', '{newComment.CommentText}', '{newComment.Time}', {newComment.Likes}";
+        var valuesList = $"'{newComment.User}', '{newComment.Uid}', '{newComment.CommentText}', '{newComment.Time}', {newComment.Likes}, '{newComment.Target}'";
 
         // 执行插入操作
         var success = sqlUtils.Insert(tableName, fieldsList, valuesList);
 
         if (success)
         {
-            GlobalConfig.CurrentLogger.Log($"成功插入新的评论，UID为'{newComment.Uid}'。", module: EnumLogModule.SQL);
+            GlobalConfig.CurrentLogger.Log($"成功插入新的评论，UID为'{newComment.Uid}'，命中'{newComment.Target}'。", module: EnumLogModule.SQL);
         }
         else
         {
-            GlobalConfig.CurrentLogger.Log($"插入新的评论失败，UID为'{newComment.Uid}'。", module: EnumLogModule.SQL);
+            GlobalConfig.CurrentLogger.Log($"插入新的命中'{newComment.Target}'的评论失败，本应插入的UID为'{newComment.Uid}'。", module: EnumLogModule.SQL);
         }
         return success;
     }
