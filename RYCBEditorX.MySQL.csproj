@@ -5,7 +5,8 @@
 		<LangVersion>12.0</LangVersion>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Prism.Wpf" Version="8.1.97" />
+		<PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+		<PackageReference Include="Prism.Wpf" Version="9.0.537" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\RYCBEditorX.Utils\RYCBEditorX.Utils.csproj" />

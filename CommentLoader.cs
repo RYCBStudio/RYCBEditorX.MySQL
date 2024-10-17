@@ -11,7 +11,9 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
         var comments = new List<Comment>();
 
         // 查询数据库中的评论数据
-        var rows = sqlUtils.Select("comments", condition: condition);
+        var rows = sqlUtils?.Select("comments", condition: condition);
+
+        if (rows is null) { return []; }
 
         foreach (var row in rows)
         {
@@ -22,7 +24,7 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
                 CommentText = row["commentText"].ToString(),
                 Time = row["time"] != DBNull.Value ? Convert.ToDateTime(row["time"]).ToString("yyyy-MM-dd HH:mm:ss") : "Unknown",
                 Likes = row["likes"] != DBNull.Value ? Convert.ToInt32(row["likes"]) : 0,
-                Target = row["target"].ToString()
+                Target = row["target"].ToString().Replace("\uffff", "'")
             };
 
             comments.Add(comment);
@@ -76,7 +78,7 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
         var fieldsList = "usr, uid, commentText, time, likes, target";
 
         // 定义值列表，并对特殊字符进行转义（例如引号）
-        var valuesList = $"'{newComment.User}', '{newComment.Uid}', '{newComment.CommentText}', '{newComment.Time}', {newComment.Likes}, {newComment.Target}";
+        var valuesList = $"'{newComment.User}', '{newComment.Uid}', '{newComment.CommentText}', '{newComment.Time}', {newComment.Likes}, '{newComment.Target.Replace("'", "\uffff")}'";
 
         // 执行插入操作
         var success = sqlUtils.Insert(tableName, fieldsList, valuesList);
@@ -111,7 +113,7 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
         var fieldsList = "usr, uid, commentText, time, likes, target";
 
         // 定义值列表，并对特殊字符进行转义（例如引号）
-        var valuesList = $"'{newComment.User}', '{newComment.Uid}', '{newComment.CommentText}', '{newComment.Time}', {newComment.Likes}, '{newComment.Target}'";
+        var valuesList = $"'{newComment.User}', '{newComment.Uid}', '{newComment.CommentText}', '{newComment.Time}', {newComment.Likes}, '{newComment.Target.Replace("'", "\uffff")}'";
 
         // 执行插入操作
         var success = sqlUtils.Insert(tableName, fieldsList, valuesList);

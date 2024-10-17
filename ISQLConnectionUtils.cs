@@ -31,7 +31,7 @@ namespace RYCBEditorX.MySQL
         void Init();
 
         /// <summary>
-        /// 选择数据库中一张表。
+        /// 选择数据库中一张表的若干数据。
         /// </summary>
         /// <param name="table_name">表名</param>
         /// <param name="field_name">(可选) 字段名</param>
@@ -63,7 +63,7 @@ namespace RYCBEditorX.MySQL
         List<string> fields, List<string> types, List<string> comment, string table_comment = "");
 
         /// <summary>
-        /// 向数据库中插入若干行数据。
+        /// 向数据表中插入若干行数据。
         /// </summary>
         /// <param name="table_name">需插入数据的表名</param>
         /// <param name="fields_list">需插入的字段列表，如果为空，则插入所有字段</param>

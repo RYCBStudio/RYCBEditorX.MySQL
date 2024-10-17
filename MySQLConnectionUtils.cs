@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using Microsoft.TeamFoundation.Common;
 using MySql.Data.MySqlClient;
 using RYCBEditorX.Utils;
-using static IronPython.SQLite.PythonSQLite;
 using static RYCBEditorX.GlobalConfig;
 
 namespace RYCBEditorX.MySQL;
@@ -29,7 +27,7 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
     public MySQLConnectionUtils()
     {
         var connectionString =
-            "df4NtPRw/QiuAehTF7Buu5Cqky7tI0+mdoTqD58vNPE/Q7H7mYo8w6tKkE05xqDPXw7HSuXcVnKUIJnTLW1Ss/iHYsfG2a0qHgmTlC+LBsFi7EkUY1tsxLJTCEF1i726AyUZNqYZ5oNQMupasy5nxeKBDFiEsxxMiQNl4mPmVn0=";
+            "kcflDL/tELk7PR1ZbKR5wYoZ0urQeYQJTb3rttZC/9F0fKpG4gtw2z1WRKzT9PW5lcM0I4iVhIY5RAI+e6L3MPZs2Baj9zxj7cIdjZJWb3gwhDxdgCslqqZWlI+kXhrG+MrECj6kGo85fUbkCNQdLVrGIG8csghtRTq+OWUozQM=";
         connectionString = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo()
         {
             Arguments = "-d " + connectionString,
@@ -81,9 +79,9 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
             CurrentLogger.Log("MySQL数据库重连成功。", module: EnumLogModule.SQL);
             ConnectionOpened = true;
         }
-        catch (Exception ex2)
+        catch (Exception ex)
         {
-            CurrentLogger.Error(ex2, module: EnumLogModule.SQL);
+            CurrentLogger.Error(ex, module: EnumLogModule.SQL);
             CurrentLogger.Log("MySQL数据库重连失败。", module: EnumLogModule.SQL);
             ConnectionOpened = false;
         }
