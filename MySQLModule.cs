@@ -90,10 +90,14 @@ public class MySQLModule : IModule
             GlobalConfig.CurrentLogger.Log("刷新 Wiki 列表", type: EnumLogType.DEBUG, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
             Dictionary<string, List<string>> OfflineWikis = [];
             var res = IWikiLoader.GetAllTargets();
+            GlobalConfig.TotalLoadedOnline = res.Count;
+            var index = 0;
             foreach (var item in res)
             {
                 GlobalConfig.CurrentLogger.Log($"HIT: {item}", type: EnumLogType.DEBUG, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
                 OfflineWikis[item] = IWikiLoader.GetWiki(item);
+                index++;
+                GlobalConfig.CurrentLoadedOnlineIndex = index;
             }
             GlobalConfig.OnlineWikis = OfflineWikis;
         });

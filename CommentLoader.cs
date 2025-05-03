@@ -35,6 +35,13 @@ public class CommentLoader(ISQLConnectionUtils sqlUtils, string condition = "")
 
     public bool DeleteComment(string uid)
     {
+        if (int.TryParse(uid, out var id))
+        {
+            if (id >= 0 && id <= 60)
+            {
+                return false;
+            }
+        }
         var condition = $"uid='{uid}'";
 
         var success = sqlUtils.Delete("comments", condition);
