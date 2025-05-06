@@ -232,7 +232,9 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
         }
         finally
         {
+#if DEBUG
             CurrentLogger.Log("当前SQL命令: " + SQL);
+#endif
         }
     }
 

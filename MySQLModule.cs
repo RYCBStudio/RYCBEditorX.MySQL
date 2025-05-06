@@ -7,6 +7,8 @@ using System.Diagnostics.CodeAnalysis;
 using RYCBEditorX.Crossings;
 using Google.Protobuf.WellKnownTypes;
 using RYCBEditorX.Crossing;
+using RYCBEditorX.Utils.Crossings;
+using System.Globalization;
 
 namespace RYCBEditorX.MySQL;
 public class MySQLModule : IModule
@@ -76,6 +78,22 @@ public class MySQLModule : IModule
         {
             GlobalConfig.CurrentLogger.Log("当前版本包含安全漏洞，请使用已修复的最新版本: " + LatestVersion[0], EnumLogType.FATAL);
             GlobalConfig.CurrentLogger.Log("The current version contains security vulnerabilities, please use the latest version that has been fixed: " + LatestVersion[0], EnumLogType.FATAL);
+        }
+        _ = null;
+        _ = mySQLConnection.Select("global_msg");
+        GlobalConfig.CurrentLogger.Log("加载全局消息", module: EnumLogModule.SQL);
+        foreach (var item in _)
+        {
+            if (item["time"].TryConvertTo<DateTime>().IsWithinSevenDays() && item["lang"].ToString() == CultureInfo.CurrentCulture.TwoLetterISOLanguageName)
+            {
+                GlobalConfig.CurrentLogger.Log("找到全局消息", module: EnumLogModule.SQL);
+                GlobalMsgCrossing.GlobalMsg.Add(new()
+                {
+                    Text = item["msg"].ToString(),
+                    Level = item["level"].TryConvertTo<int>()
+                });
+                GlobalMsgCrossing.HasGlobalMsg = true;
+            }
         }
         GlobalConfig.CurrentLogger.Log("MySQL模块初始化完成.", module: EnumLogModule.SQL);
         RefreshWikis();
