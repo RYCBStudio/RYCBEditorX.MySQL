@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using RYCBEditorX.Utils;
 using System.Diagnostics.CodeAnalysis;
 using RYCBEditorX.Crossings;
-using Google.Protobuf.WellKnownTypes;
 using RYCBEditorX.Crossing;
 using RYCBEditorX.Utils.Crossings;
 using System.Globalization;
@@ -84,7 +83,7 @@ public class MySQLModule : IModule
         GlobalConfig.CurrentLogger.Log("加载全局消息", module: EnumLogModule.SQL);
         foreach (var item in _)
         {
-            if (item["time"].TryConvertTo<DateTime>().IsWithinSevenDays() && item["lang"].ToString() == CultureInfo.CurrentCulture.TwoLetterISOLanguageName)
+            if (/*item["time"].TryConvertTo<DateTime>().IsWithinSomeDays(30) && */item["lang"].ToString() == CultureInfo.CurrentCulture.TwoLetterISOLanguageName)
             {
                 GlobalConfig.CurrentLogger.Log("找到全局消息", module: EnumLogModule.SQL);
                 GlobalMsgCrossing.GlobalMsg.Add(new()
@@ -93,6 +92,17 @@ public class MySQLModule : IModule
                     Level = item["level"].TryConvertTo<int>()
                 });
                 GlobalMsgCrossing.HasGlobalMsg = true;
+                break;
+            }else if (item["time"].TryConvertTo<DateTime>().IsWithinSomeDays(30))
+            {
+                GlobalConfig.CurrentLogger.Log("找到全局消息", module: EnumLogModule.SQL);
+                GlobalMsgCrossing.GlobalMsg.Add(new()
+                {
+                    Text = item["msg"].ToString(),
+                    Level = item["level"].TryConvertTo<int>()
+                });
+                GlobalMsgCrossing.HasGlobalMsg = true;
+                break;
             }
         }
         GlobalConfig.CurrentLogger.Log("MySQL模块初始化完成.", module: EnumLogModule.SQL);

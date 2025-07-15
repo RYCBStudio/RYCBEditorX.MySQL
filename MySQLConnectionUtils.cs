@@ -8,6 +8,7 @@ using static RYCBEditorX.GlobalConfig;
 namespace RYCBEditorX.MySQL;
 
 [System.Security.SecurityCritical]
+[System.Reflection.Obfuscation(Exclude = true)]
 public class MySQLConnectionUtils : ISQLConnectionUtils
 {
     private readonly MySqlCommand _command;
@@ -23,7 +24,6 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
     {
         get; set;
     }
-
     public MySQLConnectionUtils()
     {
         var connectionString =
@@ -86,7 +86,7 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
             ConnectionOpened = false;
         }
     }
-    
+
     /// <inheritdoc/>
     public List<Dictionary<string, object>> Select(string table_name, string field_name = "*",
         string condition = "", SQL_ORDER_BY_KEYWORDS order_by = SQL_ORDER_BY_KEYWORDS.ASC, string order_by_field = "",
@@ -153,7 +153,9 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
         finally
         {
             reader?.Close();
+#if DEBUG
             CurrentLogger.Log("当前SQL命令: " + SQL, module: EnumLogModule.SQL);
+#endif
         }
         return results;
     }
@@ -299,7 +301,9 @@ public class MySQLConnectionUtils : ISQLConnectionUtils
         }
         finally
         {
+#if DEBUG
             CurrentLogger.Log("当前SQL命令: " + CommandText, module: EnumLogModule.SQL);
+#endif
         }
     }
 }
