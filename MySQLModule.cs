@@ -114,20 +114,55 @@ public class MySQLModule : IModule
     {
         System.Threading.Tasks.Task.Run(() =>
         {
-            while (!ConnectionUtils.ConnectionOpened) ;
-            GlobalConfig.CurrentLogger.Log("刷新 Wiki 列表", type: EnumLogType.DEBUG, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
-            Dictionary<string, List<string>> OfflineWikis = [];
-            var res = IWikiLoader.GetAllTargets();
-            GlobalConfig.TotalLoadedOnline = res.Count;
-            var index = 0;
-            foreach (var item in res)
+            Dictionary<string, List<string>> offlineWikis;
+
+            try
             {
-                GlobalConfig.CurrentLogger.Log($"HIT: {item}", type: EnumLogType.DEBUG, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
-                OfflineWikis[item] = IWikiLoader.GetWiki(item);
-                index++;
-                GlobalConfig.CurrentLoadedOnlineIndex = index;
+                if (ConnectionUtils.ConnectionOpened)
+                {
+                    GlobalConfig.CurrentLogger.Log("刷新 Wiki 列表", type: EnumLogType.DEBUG, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
+
+                    var res = IWikiLoader.GetAllTargets();
+                    GlobalConfig.TotalLoadedOnline = res.Count;
+                    var index = 0;
+
+                    offlineWikis = new Dictionary<string, List<string>>();
+                    foreach (var item in res)
+                    {
+                        GlobalConfig.CurrentLogger.Log($"HIT: {item}", type: EnumLogType.DEBUG, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
+                        offlineWikis[item] = IWikiLoader.GetWiki(item);
+                        index++;
+                        GlobalConfig.CurrentLoadedOnlineIndex = index;
+                    }
+
+                    // 成功获取后更新缓存
+                    WikiCache.SaveToCache(offlineWikis);
+                }
+                else
+                {
+                    GlobalMsgCrossing.GlobalMsg.Add(new()
+                    {
+                        Text = "网络不可用，使用缓存的 Wiki 数据",
+                        Level = 1
+                    });
+                    // 网络不可用时从缓存加载
+                    GlobalConfig.CurrentLogger.Log("使用缓存的 Wiki 数据", type: EnumLogType.WARN, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
+
+                    offlineWikis = WikiCache.LoadFromCache();
+                    GlobalConfig.TotalLoadedOnline = offlineWikis.Count;
+                    GlobalConfig.CurrentLoadedOnlineIndex = offlineWikis.Count;
+                }
             }
-            GlobalConfig.OnlineWikis = OfflineWikis;
+            catch (Exception ex)
+            {
+                GlobalConfig.CurrentLogger.Log($"加载 Wiki 数据失败: {ex.Message}", type: EnumLogType.ERROR, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
+                // 从缓存加载作为后备
+                offlineWikis = WikiCache.LoadFromCache();
+                GlobalConfig.TotalLoadedOnline = offlineWikis.Count;
+                GlobalConfig.CurrentLoadedOnlineIndex = offlineWikis.Count;
+            }
+
+            GlobalConfig.OnlineWikis = offlineWikis;
         });
     }
 
