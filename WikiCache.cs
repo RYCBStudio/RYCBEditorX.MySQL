@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
-using MySql.Data.MySqlClient;
-using RYCBEditorX.MySQL;
-using RYCBEditorX.Crossing;
 
 namespace RYCBEditorX.Utils
 {
@@ -40,10 +36,10 @@ namespace RYCBEditorX.Utils
                 }
                 catch
                 {
-                    return new Dictionary<string, List<string>>();
+                    return [];
                 }
             }
-            return new Dictionary<string, List<string>>();
+            return [];
         }
     }
 }

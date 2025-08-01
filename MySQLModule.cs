@@ -23,6 +23,11 @@ public class MySQLModule : IModule
         get; set;
     }
 
+    public static List<Dictionary<string, object>> EchoChambers
+    {
+        get; set;
+    }
+
     public void OnInitialized(IContainerProvider containerProvider)
     {
         MySQLConnectionUtils mySQLConnection = new();
@@ -93,7 +98,8 @@ public class MySQLModule : IModule
                 });
                 GlobalMsgCrossing.HasGlobalMsg = true;
                 break;
-            }else if (item["time"].TryConvertTo<DateTime>().IsWithinSomeDays(30))
+            }
+            else if (item["time"].TryConvertTo<DateTime>().IsWithinSomeDays(30))
             {
                 GlobalConfig.CurrentLogger.Log("找到全局消息", module: EnumLogModule.SQL);
                 GlobalMsgCrossing.GlobalMsg.Add(new()
@@ -105,8 +111,9 @@ public class MySQLModule : IModule
                 break;
             }
         }
-        GlobalConfig.CurrentLogger.Log("MySQL模块初始化完成.", module: EnumLogModule.SQL);
+        EchoChambers = ConnectionUtils.Select("echo_chamber", "content");
         RefreshWikis();
+        GlobalConfig.CurrentLogger.Log("MySQL模块初始化完成.", module: EnumLogModule.SQL);
     }
 
 
@@ -126,7 +133,7 @@ public class MySQLModule : IModule
                     GlobalConfig.TotalLoadedOnline = res.Count;
                     var index = 0;
 
-                    offlineWikis = new Dictionary<string, List<string>>();
+                    offlineWikis = [];
                     foreach (var item in res)
                     {
                         GlobalConfig.CurrentLogger.Log($"HIT: {item}", type: EnumLogType.DEBUG, module: EnumLogModule.CUSTOM, customModuleName: "初始化:配置");
